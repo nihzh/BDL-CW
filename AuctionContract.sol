@@ -17,9 +17,11 @@ contract VickreyAuctionHouse {
     error AuctionActive();
     error NotSeller();
     error NotInCommitPhase();
+    error InvalidCommitment();
+    error NoEthAllowed();
     error NotInRevealPhase();
     error RevealAlreadyDone();
-    error InvalidCommitment();
+    error InvalidRevealedPrice();
     error NotFinalizable();
     error NotWinner();
     error WrongPayment();
@@ -174,35 +176,41 @@ contract VickreyAuctionHouse {
         A.tokenId = tokenId;
         A.seller = msg.sender;
         A.reservePrice = reservePrice;
+        A.depositPrice =  ((reservePrice / 10) < MAX_DEPOSIT_PRICE ? (reservePrice / 10):MAX_DEPOSIT_PRICE);
 
         uint64 nowTs = uint64(block.timestamp);
         A.startStamp = nowTs;
         A.commitEnd = nowTs + commitDurationSeconds;
         A.revealEnd = A.commitEnd + revealDurationSeconds;
         A.settleDuration = settleDurationSeconds;
-        A.depositPrice =  ((reservePrice / 10) < MAX_DEPOSIT_PRICE ? (reservePrice / 10):MAX_DEPOSIT_PRICE);
 
         emit AuctionStarted(auctionId, msg.sender, address(classNFT), tokenId, reservePrice, A.depositPrice, A.startStamp, A.commitEnd, A.revealEnd, A.settleDuration);
     }
 
     /// @notice Commit a bid hash during commit phase. One (the last) commit is valid per address
     /// @param commitment keccak256(abi.encodePacked(amount, salt))
-    function commitBid(bytes32 commitment) external {
+    function commitBid(bytes32 commitment) external payable{
         Auction storage A = _requireActiveAuction();
         
         // only commit in commit phase
         if (block.timestamp >= A.commitEnd || block.timestamp < A.startStamp) revert NotInCommitPhase();
+        // check commit valid
+        if (commitment == bytes32(0)) revert InvalidCommitment();
 
-        // if commit once in this phase, reset, deposit once
+        // if first commit, take deposit
         if (A.commitments[msg.sender] == bytes32(0)) {
-            // TODO: pay deposit by deposit price
-            A.commitments[msg.sender] = bytes32(0);
-            A.depositAmount[msg.sender] = 0;
+            // if(msg.value != A.depositPrice) revert ExactDepositRequired();
+            require(msg.value == A.depositPrice, "Exact deposit required");
+            A.depositAmount[msg.sender] = A.depositPrice;
         }
+        else {
+            // refuse deposit in following commits
+            // require(msg.value == 0, "Deposit only required in first commit");
+            if(msg.value != 0) revert NoEthAllowed();
+        }
+
         // make commitment
         A.commitments[msg.sender] = commitment;
-
-
         // record time for tied price
         A.commitTime[msg.sender] = uint64(block.timestamp);
 
@@ -227,24 +235,22 @@ contract VickreyAuctionHouse {
         A.revealedAmount[msg.sender] = amount;
 
         // Only bids >= reserve are "valid"
-        if (amount >= A.reservePrice) {
-            // Update top-2 with deterministic tie-break:
-            // 1) higher amount wins
-            // 2) if equal amount, earlier commitTime wins
-            if (
-                amount > A.highestBid ||
-                (amount == A.highestBid && A.commitTime[msg.sender] < A.commitTime[A.highestBidder])
-            ) {
-                // push down previous highest into second
-                if (A.highestBidder != address(0)) {
-                    A.secondBid = A.highestBid;
-                }
-                A.highestBid = amount;
-                A.highestBidder = msg.sender;
-            } else if (amount > A.secondBid) {
-                // amount <= highestBid here
-                A.secondBid = amount;
+        if (amount < A.reservePrice) revert InvalidRevealedPrice();
+
+        // Update top-2 with deterministic tie-break:
+        // 1) higher amount wins
+        // 2) if equal amount, earlier commitTime wins
+        if (amount > A.highestBid ||
+            (amount == A.highestBid && A.commitTime[msg.sender] < A.commitTime[A.highestBidder])) {
+            // push down previous highest into second
+            if (A.highestBidder != address(0)) {
+                A.secondBid = A.highestBid;
             }
+            A.highestBid = amount;
+            A.highestBidder = msg.sender;
+        } else if (amount > A.secondBid) {
+            // amount <= highestBid here
+            A.secondBid = amount;
         }
         emit BidRevealed(auctionId, msg.sender, amount);
     }
@@ -257,8 +263,8 @@ contract VickreyAuctionHouse {
         if (block.timestamp < A.revealEnd) revert NotFinalizable();
         require(!A.finalized, "already finalized");
 
+        // No valid bid >= reserve -> UNSOLD, return NFT to seller
         if (A.highestBidder == address(0)) {
-            // No valid bid >= reserve -> UNSOLD, return NFT to seller
             A.finalized = true;
             A.settled = true;
             A.clearingPrice = 0;
@@ -268,13 +274,12 @@ contract VickreyAuctionHouse {
         }
 
         // Compute second-price clearing
-        uint256 clearing = A.secondBid;
-        if (clearing < A.reservePrice) clearing = A.reservePrice;
+        uint256 clearing = (A.secondBid < A.reservePrice) ? A.reservePrice:A.secondBid;
 
         A.clearingPrice = clearing;
         A.finalized = true;
-        // Winner must pay within e.g. 3 days;
-        // TODO: settle duration ends
+
+        // Countdown from now
         A.settleDeadline = uint64(block.timestamp) + A.settleDuration;
 
         emit Finalized(auctionId, A.highestBidder, A.highestBid, A.secondBid, clearing);
