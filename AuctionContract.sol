@@ -194,13 +194,13 @@ contract VickreyAuctionHouse {
         if (block.timestamp >= A.commitEnd || block.timestamp < A.startStamp) revert NotInCommitPhase();
 
         // if commit once in this phase, reset, deposit once
-        if (A.commitments[msg.sender] != bytes32(0)) {
+        if (A.commitments[msg.sender] == bytes32(0)) {
+            // TODO: pay deposit by deposit price
             A.commitments[msg.sender] = bytes32(0);
             A.depositAmount[msg.sender] = 0;
         }
         // make commitment
         A.commitments[msg.sender] = commitment;
-        // TODO: pay deposit by deposit price
 
 
         // record time for tied price
