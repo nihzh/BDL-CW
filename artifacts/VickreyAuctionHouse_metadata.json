@@ -1,0 +1,659 @@
+{
+	"compiler": {
+		"version": "0.8.30+commit.73712a01"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "classNFTAddress",
+						"type": "address"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "constructor"
+			},
+			{
+				"inputs": [],
+				"name": "AuctionActive",
+				"type": "error"
+			},
+			{
+				"inputs": [],
+				"name": "InvalidCommitment",
+				"type": "error"
+			},
+			{
+				"inputs": [],
+				"name": "NFTNotEscrowed",
+				"type": "error"
+			},
+			{
+				"inputs": [],
+				"name": "NoActiveAuction",
+				"type": "error"
+			},
+			{
+				"inputs": [],
+				"name": "NotEnded",
+				"type": "error"
+			},
+			{
+				"inputs": [],
+				"name": "NotFinalizable",
+				"type": "error"
+			},
+			{
+				"inputs": [],
+				"name": "NotInCommitPhase",
+				"type": "error"
+			},
+			{
+				"inputs": [],
+				"name": "NotInRevealPhase",
+				"type": "error"
+			},
+			{
+				"inputs": [],
+				"name": "NotSeller",
+				"type": "error"
+			},
+			{
+				"inputs": [],
+				"name": "NotWinner",
+				"type": "error"
+			},
+			{
+				"inputs": [],
+				"name": "PaymentClosed",
+				"type": "error"
+			},
+			{
+				"inputs": [],
+				"name": "RevealAlreadyDone",
+				"type": "error"
+			},
+			{
+				"inputs": [],
+				"name": "WrongPayment",
+				"type": "error"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "id",
+						"type": "uint256"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "seller",
+						"type": "address"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "nft",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "tokenId",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "reservePrice",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "depositPrice",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "startStamp",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint64",
+						"name": "commitEnd",
+						"type": "uint64"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint64",
+						"name": "revealEnd",
+						"type": "uint64"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint64",
+						"name": "settleDuration",
+						"type": "uint64"
+					}
+				],
+				"name": "AuctionStarted",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "id",
+						"type": "uint256"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "bidder",
+						"type": "address"
+					}
+				],
+				"name": "BidCommitted",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "id",
+						"type": "uint256"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "bidder",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					}
+				],
+				"name": "BidRevealed",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "id",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "address",
+						"name": "winner",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "highest",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "second",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "clearingPrice",
+						"type": "uint256"
+					}
+				],
+				"name": "Finalized",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "id",
+						"type": "uint256"
+					}
+				],
+				"name": "SellerReclaimed",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "id",
+						"type": "uint256"
+					}
+				],
+				"name": "Unsold",
+				"type": "event"
+			},
+			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "id",
+						"type": "uint256"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "winner",
+						"type": "address"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "price",
+						"type": "uint256"
+					}
+				],
+				"name": "WinnerPaidAndClaimed",
+				"type": "event"
+			},
+			{
+				"inputs": [],
+				"name": "MAX_DEPOSIT_PRICE",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "MAX_DURATION",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "MAX_PRICE",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "auctionId",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "classNFT",
+				"outputs": [
+					{
+						"internalType": "contract IERC721",
+						"name": "",
+						"type": "address"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "bytes32",
+						"name": "commitment",
+						"type": "bytes32"
+					}
+				],
+				"name": "commitBid",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "id",
+						"type": "uint256"
+					}
+				],
+				"name": "currentPhase",
+				"outputs": [
+					{
+						"internalType": "string",
+						"name": "",
+						"type": "string"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "finalize",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "id",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "bidder",
+						"type": "address"
+					}
+				],
+				"name": "getCommitTime",
+				"outputs": [
+					{
+						"internalType": "uint64",
+						"name": "",
+						"type": "uint64"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "id",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "bidder",
+						"type": "address"
+					}
+				],
+				"name": "getCommitment",
+				"outputs": [
+					{
+						"internalType": "bytes32",
+						"name": "",
+						"type": "bytes32"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "id",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "bidder",
+						"type": "address"
+					}
+				],
+				"name": "getRevealedAmount",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "id",
+						"type": "uint256"
+					}
+				],
+				"name": "getTimes",
+				"outputs": [
+					{
+						"internalType": "uint64",
+						"name": "commitEnd",
+						"type": "uint64"
+					},
+					{
+						"internalType": "uint64",
+						"name": "revealEnd",
+						"type": "uint64"
+					},
+					{
+						"internalType": "uint64",
+						"name": "settleDeadline",
+						"type": "uint64"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "id",
+						"type": "uint256"
+					}
+				],
+				"name": "getWinnerInfo",
+				"outputs": [
+					{
+						"internalType": "address",
+						"name": "winner",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "price",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint64",
+						"name": "payDeadline",
+						"type": "uint64"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "payAndClaim",
+				"outputs": [],
+				"stateMutability": "payable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"internalType": "bytes32",
+						"name": "salt",
+						"type": "bytes32"
+					}
+				],
+				"name": "revealBid",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "sellerReclaimIfUnpaid",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "tokenId",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "reservePrice",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint64",
+						"name": "commitDurationSeconds",
+						"type": "uint64"
+					},
+					{
+						"internalType": "uint64",
+						"name": "revealDurationSeconds",
+						"type": "uint64"
+					},
+					{
+						"internalType": "uint64",
+						"name": "settleDurationSeconds",
+						"type": "uint64"
+					}
+				],
+				"name": "startAuction",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			}
+		],
+		"devdoc": {
+			"kind": "dev",
+			"methods": {
+				"commitBid(bytes32)": {
+					"params": {
+						"commitment": "keccak256(abi.encodePacked(amount, salt))"
+					}
+				},
+				"revealBid(uint256,bytes32)": {
+					"params": {
+						"amount": "Bid amount in wei.",
+						"salt": "The random secret used in commit."
+					}
+				},
+				"startAuction(uint256,uint256,uint64,uint64,uint64)": {
+					"params": {
+						"commitDurationSeconds": "Commit phase duration in seconds.",
+						"reservePrice": "Minimum acceptable price (wei).",
+						"revealDurationSeconds": "Reveal phase duration in seconds.",
+						"tokenId": "Token id in the fixed ClassNFT."
+					}
+				}
+			},
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {
+				"commitBid(bytes32)": {
+					"notice": "Commit a bid hash during commit phase. One (the last) commit is valid per address"
+				},
+				"finalize()": {
+					"notice": "Finalize result after reveal ends: compute clearing price or mark unsold.         Sets a payment deadline for the winner to pay and claim."
+				},
+				"payAndClaim()": {
+					"notice": "Winner pays the clearing price and claims the NFT; seller receives funds."
+				},
+				"revealBid(uint256,bytes32)": {
+					"notice": "Reveal your bid during reveal phase."
+				},
+				"sellerReclaimIfUnpaid()": {
+					"notice": "If winner未在截止前付款，卖家可取回NFT，标记本轮结束（流拍处理）。"
+				},
+				"startAuction(uint256,uint256,uint64,uint64,uint64)": {
+					"notice": "Start a new auction. Seller must own the NFT and approve this contract; NFT is escrowed in."
+				}
+			},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"AuctionContract.sol": "VickreyAuctionHouse"
+		},
+		"evmVersion": "prague",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"AuctionContract.sol": {
+			"keccak256": "0x1f57b9ca88a2284b1d6cae1bb11ad34cfd793b562bc88d552e1a37e856804594",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://fcf824bf84df6594277060ce595333c1654642d2103e2b17ef9b9b8bdba04a06",
+				"dweb:/ipfs/QmVqmPWWX436CHG87SPG7jQtfpMHu3HKv5CZgtAGSrQkjd"
+			]
+		}
+	},
+	"version": 1
+}
