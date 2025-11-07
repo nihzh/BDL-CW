@@ -6,24 +6,23 @@
 	"output": {
 		"abi": [
 			{
-				"inputs": [
-					{
-						"internalType": "address",
-						"name": "classNFTAddress",
-						"type": "address"
-					}
-				],
-				"stateMutability": "nonpayable",
-				"type": "constructor"
-			},
-			{
 				"inputs": [],
 				"name": "AuctionActive",
 				"type": "error"
 			},
 			{
 				"inputs": [],
+				"name": "ExactDepositRequired",
+				"type": "error"
+			},
+			{
+				"inputs": [],
 				"name": "InvalidCommitment",
+				"type": "error"
+			},
+			{
+				"inputs": [],
+				"name": "InvalidRevealedPrice",
 				"type": "error"
 			},
 			{
@@ -34,6 +33,16 @@
 			{
 				"inputs": [],
 				"name": "NoActiveAuction",
+				"type": "error"
+			},
+			{
+				"inputs": [],
+				"name": "NoDeposit",
+				"type": "error"
+			},
+			{
+				"inputs": [],
+				"name": "NoEthAllowed",
 				"type": "error"
 			},
 			{
@@ -78,6 +87,11 @@
 			},
 			{
 				"inputs": [],
+				"name": "WithdrawFailed",
+				"type": "error"
+			},
+			{
+				"inputs": [],
 				"name": "WrongPayment",
 				"type": "error"
 			},
@@ -112,12 +126,6 @@
 						"indexed": false,
 						"internalType": "uint256",
 						"name": "reservePrice",
-						"type": "uint256"
-					},
-					{
-						"indexed": false,
-						"internalType": "uint256",
-						"name": "depositPrice",
 						"type": "uint256"
 					},
 					{
@@ -281,13 +289,32 @@
 				"type": "event"
 			},
 			{
+				"anonymous": false,
+				"inputs": [
+					{
+						"indexed": true,
+						"internalType": "uint256",
+						"name": "id",
+						"type": "uint256"
+					},
+					{
+						"indexed": true,
+						"internalType": "address",
+						"name": "bidder",
+						"type": "address"
+					}
+				],
+				"name": "WithDrawnDeposit",
+				"type": "event"
+			},
+			{
 				"inputs": [],
-				"name": "MAX_DEPOSIT_PRICE",
+				"name": "CLASS_NFT",
 				"outputs": [
 					{
-						"internalType": "uint256",
+						"internalType": "address",
 						"name": "",
-						"type": "uint256"
+						"type": "address"
 					}
 				],
 				"stateMutability": "view",
@@ -355,7 +382,7 @@
 				],
 				"name": "commitBid",
 				"outputs": [],
-				"stateMutability": "nonpayable",
+				"stateMutability": "payable",
 				"type": "function"
 			},
 			{
@@ -397,7 +424,7 @@
 						"type": "address"
 					}
 				],
-				"name": "getCommitTime",
+				"name": "getCommitSeq",
 				"outputs": [
 					{
 						"internalType": "uint64",
@@ -427,6 +454,30 @@
 						"internalType": "bytes32",
 						"name": "",
 						"type": "bytes32"
+					}
+				],
+				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "id",
+						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "bidder",
+						"type": "address"
+					}
+				],
+				"name": "getDepositAmount",
+				"outputs": [
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
 					}
 				],
 				"stateMutability": "view",
@@ -540,8 +591,14 @@
 				"type": "function"
 			},
 			{
-				"inputs": [],
-				"name": "sellerReclaimIfUnpaid",
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "id",
+						"type": "uint256"
+					}
+				],
+				"name": "sellerReclaimNFT",
 				"outputs": [],
 				"stateMutability": "nonpayable",
 				"type": "function"
@@ -575,6 +632,26 @@
 					}
 				],
 				"name": "startAuction",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "id",
+						"type": "uint256"
+					}
+				],
+				"name": "withdrawDeposits",
+				"outputs": [],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			},
+			{
+				"inputs": [],
+				"name": "withdrawDeposits",
 				"outputs": [],
 				"stateMutability": "nonpayable",
 				"type": "function"
@@ -620,8 +697,8 @@
 				"revealBid(uint256,bytes32)": {
 					"notice": "Reveal your bid during reveal phase."
 				},
-				"sellerReclaimIfUnpaid()": {
-					"notice": "If winner未在截止前付款，卖家可取回NFT，标记本轮结束（流拍处理）。"
+				"sellerReclaimNFT(uint256)": {
+					"notice": "If winner not settle up before settle deadline, auctoin passed and return the NFT"
 				},
 				"startAuction(uint256,uint256,uint64,uint64,uint64)": {
 					"notice": "Start a new auction. Seller must own the NFT and approve this contract; NFT is escrowed in."
@@ -647,11 +724,11 @@
 	},
 	"sources": {
 		"AuctionContract.sol": {
-			"keccak256": "0x8f31c49c3a6d181bf65b948061ea189839edc22f532bd4b3bc01ebde81669528",
+			"keccak256": "0x6859bebe70559df86b54fa1f30ebd7cc58278c7a7918569b892285bfc5eab32e",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://6d333590908d441d768dcfee48b5fbad7836c686d682cc2fe7866024cab446ab",
-				"dweb:/ipfs/QmfQaHkxZVGK9QWummNBvoxiRfT4dsU2arprn2ZkrAVLo2"
+				"bzz-raw://e5db9c392e4cea31f37d3c6318faec2837bcf1ad7fe1541e070787cc8bb4c10b",
+				"dweb:/ipfs/QmedjS4Txzyvq2uwwK3ufJ6rKdY4FpoVuVV56FkUZEFcuk"
 			]
 		}
 	},

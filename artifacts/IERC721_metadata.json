@@ -85,7 +85,7 @@
 						"type": "uint256"
 					}
 				],
-				"name": "transferFrom",
+				"name": "safeTransferFrom",
 				"outputs": [],
 				"stateMutability": "nonpayable",
 				"type": "function"
@@ -122,11 +122,11 @@
 	},
 	"sources": {
 		"AuctionContract.sol": {
-			"keccak256": "0x8f31c49c3a6d181bf65b948061ea189839edc22f532bd4b3bc01ebde81669528",
+			"keccak256": "0x6859bebe70559df86b54fa1f30ebd7cc58278c7a7918569b892285bfc5eab32e",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://6d333590908d441d768dcfee48b5fbad7836c686d682cc2fe7866024cab446ab",
-				"dweb:/ipfs/QmfQaHkxZVGK9QWummNBvoxiRfT4dsU2arprn2ZkrAVLo2"
+				"bzz-raw://e5db9c392e4cea31f37d3c6318faec2837bcf1ad7fe1541e070787cc8bb4c10b",
+				"dweb:/ipfs/QmedjS4Txzyvq2uwwK3ufJ6rKdY4FpoVuVV56FkUZEFcuk"
 			]
 		}
 	},
