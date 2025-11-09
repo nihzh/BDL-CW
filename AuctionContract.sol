@@ -11,12 +11,17 @@ interface IERC721 {
     function getApproved(uint256 tokenId) external view returns (address);
 }
 
+interface IERC721Receiver {
+    function onERC721Received(address,address,uint256,bytes calldata) external returns (bytes4);
+}
+
 contract VickreyAuctionHouse {
     // --------- Errors ---------
     error NoActiveAuction();
     error AuctionActive();
     error NotSeller();
     error NotInCommitPhase();
+    error SellerCannotBid();
     error InvalidCommitment();
     error ExactDepositRequired();
     error NoEthAllowed();
@@ -28,6 +33,7 @@ contract VickreyAuctionHouse {
     error WrongPayment();
     error PaymentClosed();
     error NotEnded();
+    error NoClaimable();
     error NoDeposit();
     error WithdrawFailed();
     error NFTNotEscrowed();
@@ -36,7 +42,6 @@ contract VickreyAuctionHouse {
     uint256 public constant MAX_DURATION = 2592000;  // 30 days
     uint256 public constant MAX_PRICE = 1e27; // 1_000_000_000 ETH
     // uint256 public constant MAX_DEPOSIT_PRICE = 0.01 ether; // 0.01 ETH
-    address public constant CLASS_NFT = 0x1546Bd67237122754D3F0cB761c139f81388b210;
 
     // --------- Minimal Reentrancy Guard ---------
     uint256 private constant _NOT_ENTERED = 1;
@@ -47,6 +52,10 @@ contract VickreyAuctionHouse {
         _status = _ENTERED;
         _;
         _status = _NOT_ENTERED;
+    }
+
+    function onERC721Received(address, address, uint256, bytes calldata) external pure returns (bytes4) {
+        return IERC721Receiver.onERC721Received.selector;
     }
 
     // --------- Auction Storage ---------
@@ -60,6 +69,7 @@ contract VickreyAuctionHouse {
 
         // Pricing
         uint256 reservePrice;
+        uint256 depositPrice;
 
         // Phases (unix seconds)
         uint64 startStamp; // inclusive
@@ -72,9 +82,9 @@ contract VickreyAuctionHouse {
         address highestBidder;
         uint256 highestBid; // value revealed (>= reserve)
         uint256 secondBid;  // second-highest valid revealed value
-        uint256 clearingPrice; // max(secondBid, reservePrice)
+        uint256 clearingPrice; // amount which the winner to be paid
         bool finalized; // result computed
-        bool settled;   // NFT & funds exchanged OR marked unsold
+        bool settled;   // NFT trasferred
 
         // For deterministic tie-break (earlier commit wins)
         // and to track per-bidder status
@@ -90,7 +100,7 @@ contract VickreyAuctionHouse {
     mapping(uint256 => Auction) private _auctions;
 
     // To keep external view functions simple:
-    IERC721 public immutable classNFT = IERC721(CLASS_NFT); // Sepolia NFT contract from spec
+    IERC721 public immutable classNFT = IERC721(0x1546Bd67237122754D3F0cB761c139f81388b210); // Sepolia NFT contract from spec
 
     // --------- Events ---------
     event AuctionStarted(
@@ -99,6 +109,7 @@ contract VickreyAuctionHouse {
         address indexed nft,
         uint256 tokenId,
         uint256 reservePrice,
+        uint256 depositPrice,
         uint256 startStamp,
         uint64 commitEnd,
         uint64 revealEnd,
@@ -112,31 +123,8 @@ contract VickreyAuctionHouse {
     event SellerReclaimed(uint256 indexed id);
     event WithDrawnDeposit(uint256 indexed id, address indexed bidder);
 
-    // --------- Views (helpers) ---------
-    function currentPhase(uint256 id) public view returns (string memory) {
-        Auction storage A = _requireAuction(id);
-        uint256 t = block.timestamp;
-        if (t < A.commitEnd) return "COMMIT";
-        if (t < A.revealEnd) return "REVEAL";
-        if (!A.finalized) return "FINALIZE_PENDING";
-        if (A.finalized && !A.settled && A.highestBidder != address(0) && t <= A.settleDeadline) return "AWAIT_PAYMENT";
-        if (!A.settled) return "SETTLEMENT_OPEN";
-        return "ENDED";
-    }
-
-    function getWinnerInfo(uint256 id) external view returns (address winner, uint256 price, uint64 payDeadline) {
-        Auction storage A = _requireAuction(id);
-        return (A.highestBidder, A.clearingPrice, A.settleDeadline);
-    }
-
-    // return set stage timestamps
-    function getTimes(uint256 id) external view returns (uint64 commitEnd, uint64 revealEnd, uint64 settleDeadline) {
-        Auction storage A = _requireAuction(id);
-        return (A.commitEnd, A.revealEnd, A.settleDeadline);
-    }
 
     // --------- Core Logic ---------
-
     /// @notice Start a new auction. Seller must own the NFT and approve this contract; NFT is escrowed in.
     /// @param tokenId Token id in the fixed ClassNFT.
     /// @param reservePrice Minimum acceptable price (wei).
@@ -158,6 +146,7 @@ contract VickreyAuctionHouse {
         // Basic checks
         require(commitDurationSeconds > 0 && commitDurationSeconds < MAX_DURATION, "CONFIG: bad commit durations");
         require(revealDurationSeconds > 0 && revealDurationSeconds < MAX_DURATION, "CONFIG: bad reveal durations");
+        require(settleDurationSeconds > 0 && settleDurationSeconds < MAX_DURATION, "CONFIG: bad settle durations");
         require(reservePrice >= 0 && reservePrice < MAX_PRICE, "CONFIG: bad reserve price");
 
         // escrow NFT
@@ -172,8 +161,8 @@ contract VickreyAuctionHouse {
         A.tokenId = tokenId;
         A.seller = msg.sender;
         A.reservePrice = reservePrice;
-        // TODO: deposit = reserve price
-        // A.depositPrice =  ((reservePrice / 10) < MAX_DEPOSIT_PRICE ? (reservePrice / 10):MAX_DEPOSIT_PRICE);
+        // deposit = 50% reserve price
+        A.depositPrice =  ((reservePrice / 2) < MAX_PRICE ? (reservePrice / 2):MAX_PRICE);
 
         uint64 nowTs = uint64(block.timestamp);
         A.startStamp = nowTs;
@@ -181,7 +170,7 @@ contract VickreyAuctionHouse {
         A.revealEnd = A.commitEnd + revealDurationSeconds;
         A.settleDuration = settleDurationSeconds;
 
-        emit AuctionStarted(auctionId, msg.sender, address(classNFT), tokenId, reservePrice, A.startStamp, A.commitEnd, A.revealEnd, A.settleDuration);
+        emit AuctionStarted(auctionId, msg.sender, address(classNFT), tokenId, reservePrice, A.depositPrice, A.startStamp, A.commitEnd, A.revealEnd, A.settleDuration);
     }
 
     /// @notice Commit a bid hash during commit phase. One (the last) commit is valid per address
@@ -194,10 +183,13 @@ contract VickreyAuctionHouse {
         // check commit valid
         if (commitment == bytes32(0)) revert InvalidCommitment();
 
-        // if first commit, take deposit = reserve price
+        // seller can't commit bid
+        if (msg.sender == A.seller) revert SellerCannotBid();
+
+        // if first commit, take deposit = reserve price * 0.5
         if (A.commitments[msg.sender] == bytes32(0)) {
-            if (msg.value == A.reservePrice) revert ExactDepositRequired();
-            A.depositAmount[msg.sender] = A.reservePrice;
+            if (msg.value != A.depositPrice) revert ExactDepositRequired();
+            A.depositAmount[msg.sender] += A.depositPrice;
         }
         else {
             // refuse deposit in following commits
@@ -205,11 +197,12 @@ contract VickreyAuctionHouse {
             if(msg.value != 0) revert NoEthAllowed();
         }
 
-        // make commitment
-        A.commitments[msg.sender] = commitment;
         // seq no. for tied price
         A.commitSeqCounter += 1;
         A.commitSeq[msg.sender] = A.commitSeqCounter;
+
+        // make commitment
+        A.commitments[msg.sender] = commitment;
 
         emit BidCommitted(auctionId, msg.sender);
     }
@@ -224,6 +217,7 @@ contract VickreyAuctionHouse {
 
         if (A.revealedAmount[msg.sender] != 0) revert RevealAlreadyDone();
 
+        // check commit validation
         bytes32 c = A.commitments[msg.sender];
         if (c == bytes32(0)) revert InvalidCommitment();
         if (keccak256(abi.encodePacked(amount, salt)) != c) revert InvalidCommitment();
@@ -246,7 +240,6 @@ contract VickreyAuctionHouse {
             A.highestBid = amount;
             A.highestBidder = msg.sender;
         } else if (amount == A.highestBid && A.commitSeq[msg.sender] < A.commitSeq[A.highestBidder]) {
-            // TODO: add lock to prevent together revealx
             // equal highest price, not second price
             A.highestBid = amount;
             A.highestBidder = msg.sender;
@@ -264,11 +257,13 @@ contract VickreyAuctionHouse {
         if (block.timestamp < A.revealEnd) revert NotFinalizable();
         require(!A.finalized, "already finalized");
 
+        // CEI
+        A.finalized = true;
+
         // No valid bid >= reserve -> UNSOLD, return NFT to seller
         if (A.highestBidder == address(0)) {
-            A.finalized = true;
-            A.settled = true;
             A.clearingPrice = 0;
+            A.settled = true;
             _safeTransferNFT(address(this), A.seller, A.tokenId);
             //_safeTransferNFT(A.nft, address(this), A.seller, A.tokenId);
             emit Unsold(auctionId);
@@ -276,46 +271,86 @@ contract VickreyAuctionHouse {
         }
 
         // Compute second-price clearing, if no second price
-        uint256 clearing = (A.secondBid < A.reservePrice) ? A.reservePrice:A.secondBid;
+        uint256 dealPrice = (A.secondBid < A.reservePrice) ? A.reservePrice:A.secondBid;
 
-        A.clearingPrice = clearing - A.depositAmount[A.highestBidder];
-        A.finalized = true;
+        // determine winner's payment by deposit amount
+        if(dealPrice >= A.depositAmount[A.highestBidder]){
+            uint256 clearing = dealPrice - A.depositAmount[A.highestBidder];
+            A.clearingPrice = clearing;
+            // the deposit of winner transfer to the seller, CEI
+            uint256 pay = A.depositAmount[A.highestBidder];
+            A.depositAmount[A.highestBidder] = 0;
+            A.depositAmount[A.seller] = pay;
+        }
+        // winner's deposit more than deal price
+        else if (dealPrice < A.depositAmount[A.highestBidder]){
+            uint256 toWithdraw = A.depositAmount[A.highestBidder] - dealPrice;
+            A.clearingPrice = 0;
+            A.depositAmount[A.highestBidder] = toWithdraw;
+            A.depositAmount[A.seller] = dealPrice;
+        }
 
         // Countdown from now
         A.settleDeadline = uint64(block.timestamp) + A.settleDuration;
 
-        emit Finalized(auctionId, A.highestBidder, A.highestBid, A.secondBid, clearing);
+        emit Finalized(auctionId, A.highestBidder, A.highestBid, A.secondBid, A.clearingPrice);
     }
 
-    /// @notice Winner pays the clearing price and claims the NFT; seller receives funds.
+    /// @notice Winner pays the clearing price and claims the NFT.
+    ///     1) there is amount to pay ==> must before the deadline
+    ///     2) all amount paid ==> claim anytime (forever reserved)
     function payAndClaim() external payable nonReentrant {
         Auction storage A = _requireActiveAuction();
-        // TODO: check current phase
         if (!A.finalized) revert NotEnded();
         if (A.highestBidder != msg.sender) revert NotWinner();
-        if (block.timestamp > A.settleDeadline || A.settled == true) revert PaymentClosed();
+        if (A.settled) revert NoClaimable();
+        if (block.timestamp > A.settleDeadline && A.clearingPrice != 0) revert PaymentClosed();
         if (msg.value != A.clearingPrice) revert WrongPayment();
+        
+        // Pay seller (if there is amount to pay)
+        if (A.clearingPrice != 0){
+            A.clearingPrice = 0;
+            A.depositAmount[A.seller] += msg.value;
+        }
 
-        // Effects
+        // Transfer NFT to winner
         A.settled = true;
-
-        // Interactions
-        // 1) Pay seller
-        (bool ok, ) = A.seller.call{value: msg.value}("");
-        require(ok, "pay seller failed");
-
-        // 2) Transfer NFT to winner
         _safeTransferNFT(address(this), msg.sender, A.tokenId);
 
         emit WinnerPaidAndClaimed(auctionId, msg.sender, msg.value);
     }
 
-    /// @notice If winner not settle up before settle deadline, auctoin passed and return the NFT
+    // claim the previous NFT
+    function payAndClaim(uint256 id) external payable nonReentrant {
+        Auction storage A = _requireAuction(id);
+        if (!A.finalized) revert NotEnded();
+        if (A.highestBidder != msg.sender) revert NotWinner();
+        if (A.settled) revert NoClaimable();
+        // 1) there is amount to pay ==> must before the deadline
+        // 2) all amount paid ==> claim anytime (forever reserved)
+        if (block.timestamp > A.settleDeadline && A.clearingPrice != 0) revert PaymentClosed();
+        if (msg.value != A.clearingPrice) revert WrongPayment();
+        
+        // Pay seller (if there is amount to pay)
+        if (A.clearingPrice != 0){
+            A.clearingPrice = 0;
+            A.depositAmount[A.seller] += msg.value;
+        }
+
+        // Transfer NFT to winner
+        A.settled = true;
+        _safeTransferNFT(address(this), msg.sender, A.tokenId);
+
+        emit WinnerPaidAndClaimed(auctionId, msg.sender, msg.value);
+    }
+
+    /// @notice If winner not settle up before settle deadline, auction passed and return the NFT
     function sellerReclaimNFT(uint256 id) external {
         Auction storage A = _requireAuction(id);
         if (!A.finalized) revert NotEnded();
-        if (msg.sender != A.seller) revert NotSeller();
-        require(block.timestamp > A.settleDeadline, "still payable window");
+        if (block.timestamp <= A.settleDeadline) revert NotEnded();
+        if (msg.sender != A.seller) revert NoClaimable();
+        if (A.settled) revert NoClaimable();
 
         // send NFT to seller
         A.settled = true;
@@ -325,7 +360,7 @@ contract VickreyAuctionHouse {
         uint256 amount = A.depositAmount[A.highestBidder];
         A.depositAmount[A.highestBidder] = 0;
         (bool ok, ) = msg.sender.call{value: amount}("");
-        require(ok, "withdraw failed");
+        if(!ok) revert WithdrawFailed();
 
         emit SellerReclaimed(auctionId);
     }
@@ -333,12 +368,12 @@ contract VickreyAuctionHouse {
     function withdrawDeposits() external nonReentrant{
         Auction storage A = _requireActiveAuction();
         if (!A.finalized) revert NotEnded();
-        if (msg.sender == A.highestBidder) revert NoDeposit();
         if (A.depositAmount[msg.sender] == 0) revert NoDeposit();
 
-        (bool ok, ) = msg.sender.call{value: A.depositAmount[msg.sender]}("");
-        if(ok)  revert WithdrawFailed();
+        uint256 amount = A.depositAmount[msg.sender];
         A.depositAmount[msg.sender] = 0;
+        (bool ok, ) = msg.sender.call{value: amount}("");
+        if(!ok)  revert WithdrawFailed();
         
         emit WithDrawnDeposit(auctionId, msg.sender);
     }
@@ -346,12 +381,12 @@ contract VickreyAuctionHouse {
     function withdrawDeposits(uint256 id) external nonReentrant{
         Auction storage A = _requireAuction(id);
         if (!A.finalized) revert NotEnded();
-        if (msg.sender == A.highestBidder) revert NoDeposit();
         if (A.depositAmount[msg.sender] == 0) revert NoDeposit();
 
-        (bool ok, ) = msg.sender.call{value: A.depositAmount[msg.sender]}("");
-        if(ok)  revert WithdrawFailed();
+        uint256 amount = A.depositAmount[msg.sender];
         A.depositAmount[msg.sender] = 0;
+        (bool ok, ) = msg.sender.call{value: amount}("");
+        if(!ok)  revert WithdrawFailed();
         
         emit WithDrawnDeposit(auctionId, msg.sender);
     }
@@ -399,4 +434,27 @@ contract VickreyAuctionHouse {
         Auction storage A = _requireAuction(id);
         return A.revealedAmount[bidder];
     }
+
+    function currentPhase(uint256 id) public view returns (string memory) {
+        Auction storage A = _requireAuction(id);
+        uint256 t = block.timestamp;
+        if (t < A.commitEnd) return "COMMIT";
+        if (t < A.revealEnd) return "REVEAL";
+        if (!A.finalized) return "FINALIZE_PENDING";
+        if (A.finalized && !A.settled && A.highestBidder != address(0) && t <= A.settleDeadline) return "AWAIT_PAYMENT";
+        return "ENDED";
+    }
+
+    function getWinnerInfo(uint256 id) external view returns (address winner, uint256 price, uint64 payDeadline) {
+        Auction storage A = _requireAuction(id);
+        // uint256 amount = A.clearingPrice > A.depositAmount[A.highestBidder] ? (A.clearingPrice - A.depositAmount[A.highestBidder]):0;
+        return (A.highestBidder, A.clearingPrice, A.settleDeadline);
+    }
+
+    // return set stage timestamps
+    function getTimes(uint256 id) external view returns (uint64 startStamp, uint64 commitEnd, uint64 revealEnd, uint64 settleDeadline) {
+        Auction storage A = _requireAuction(id);
+        return (A.startStamp, A.commitEnd, A.revealEnd, A.settleDeadline);
+    }
+
 }

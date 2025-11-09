@@ -37,6 +37,11 @@
 			},
 			{
 				"inputs": [],
+				"name": "NoClaimable",
+				"type": "error"
+			},
+			{
+				"inputs": [],
 				"name": "NoDeposit",
 				"type": "error"
 			},
@@ -87,6 +92,11 @@
 			},
 			{
 				"inputs": [],
+				"name": "SellerCannotBid",
+				"type": "error"
+			},
+			{
+				"inputs": [],
 				"name": "WithdrawFailed",
 				"type": "error"
 			},
@@ -126,6 +136,12 @@
 						"indexed": false,
 						"internalType": "uint256",
 						"name": "reservePrice",
+						"type": "uint256"
+					},
+					{
+						"indexed": false,
+						"internalType": "uint256",
+						"name": "depositPrice",
 						"type": "uint256"
 					},
 					{
@@ -306,19 +322,6 @@
 				],
 				"name": "WithDrawnDeposit",
 				"type": "event"
-			},
-			{
-				"inputs": [],
-				"name": "CLASS_NFT",
-				"outputs": [
-					{
-						"internalType": "address",
-						"name": "",
-						"type": "address"
-					}
-				],
-				"stateMutability": "view",
-				"type": "function"
 			},
 			{
 				"inputs": [],
@@ -519,6 +522,11 @@
 				"outputs": [
 					{
 						"internalType": "uint64",
+						"name": "startStamp",
+						"type": "uint64"
+					},
+					{
+						"internalType": "uint64",
 						"name": "commitEnd",
 						"type": "uint64"
 					},
@@ -563,6 +571,53 @@
 					}
 				],
 				"stateMutability": "view",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					},
+					{
+						"internalType": "bytes",
+						"name": "",
+						"type": "bytes"
+					}
+				],
+				"name": "onERC721Received",
+				"outputs": [
+					{
+						"internalType": "bytes4",
+						"name": "",
+						"type": "bytes4"
+					}
+				],
+				"stateMutability": "pure",
+				"type": "function"
+			},
+			{
+				"inputs": [
+					{
+						"internalType": "uint256",
+						"name": "id",
+						"type": "uint256"
+					}
+				],
+				"name": "payAndClaim",
+				"outputs": [],
+				"stateMutability": "payable",
 				"type": "function"
 			},
 			{
@@ -692,13 +747,13 @@
 					"notice": "Finalize result after reveal ends: compute clearing price or mark unsold.         Sets a payment deadline for the winner to pay and claim."
 				},
 				"payAndClaim()": {
-					"notice": "Winner pays the clearing price and claims the NFT; seller receives funds."
+					"notice": "Winner pays the clearing price and claims the NFT.     1) there is amount to pay ==> must before the deadline     2) all amount paid ==> claim anytime (forever reserved)"
 				},
 				"revealBid(uint256,bytes32)": {
 					"notice": "Reveal your bid during reveal phase."
 				},
 				"sellerReclaimNFT(uint256)": {
-					"notice": "If winner not settle up before settle deadline, auctoin passed and return the NFT"
+					"notice": "If winner not settle up before settle deadline, auction passed and return the NFT"
 				},
 				"startAuction(uint256,uint256,uint64,uint64,uint64)": {
 					"notice": "Start a new auction. Seller must own the NFT and approve this contract; NFT is escrowed in."
@@ -724,11 +779,11 @@
 	},
 	"sources": {
 		"AuctionContract.sol": {
-			"keccak256": "0x6859bebe70559df86b54fa1f30ebd7cc58278c7a7918569b892285bfc5eab32e",
+			"keccak256": "0x01a1af561571508153e9b9d4c15f2ef2302462dd70ac1de341c796a414d4b89c",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://e5db9c392e4cea31f37d3c6318faec2837bcf1ad7fe1541e070787cc8bb4c10b",
-				"dweb:/ipfs/QmedjS4Txzyvq2uwwK3ufJ6rKdY4FpoVuVV56FkUZEFcuk"
+				"bzz-raw://f2639f78a1f6ab8aad09553b04781766694f0c1505dde9537f3c587e1578dd0a",
+				"dweb:/ipfs/QmcHqDqVG75sVkUXr5Z9RFL5wmvdR96XqoiykGKgw5P8QJ"
 			]
 		}
 	},

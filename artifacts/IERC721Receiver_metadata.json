@@ -1,0 +1,80 @@
+{
+	"compiler": {
+		"version": "0.8.30+commit.73712a01"
+	},
+	"language": "Solidity",
+	"output": {
+		"abi": [
+			{
+				"inputs": [
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "",
+						"type": "uint256"
+					},
+					{
+						"internalType": "bytes",
+						"name": "",
+						"type": "bytes"
+					}
+				],
+				"name": "onERC721Received",
+				"outputs": [
+					{
+						"internalType": "bytes4",
+						"name": "",
+						"type": "bytes4"
+					}
+				],
+				"stateMutability": "nonpayable",
+				"type": "function"
+			}
+		],
+		"devdoc": {
+			"kind": "dev",
+			"methods": {},
+			"version": 1
+		},
+		"userdoc": {
+			"kind": "user",
+			"methods": {},
+			"version": 1
+		}
+	},
+	"settings": {
+		"compilationTarget": {
+			"AuctionContract.sol": "IERC721Receiver"
+		},
+		"evmVersion": "prague",
+		"libraries": {},
+		"metadata": {
+			"bytecodeHash": "ipfs"
+		},
+		"optimizer": {
+			"enabled": false,
+			"runs": 200
+		},
+		"remappings": []
+	},
+	"sources": {
+		"AuctionContract.sol": {
+			"keccak256": "0x01a1af561571508153e9b9d4c15f2ef2302462dd70ac1de341c796a414d4b89c",
+			"license": "MIT",
+			"urls": [
+				"bzz-raw://f2639f78a1f6ab8aad09553b04781766694f0c1505dde9537f3c587e1578dd0a",
+				"dweb:/ipfs/QmcHqDqVG75sVkUXr5Z9RFL5wmvdR96XqoiykGKgw5P8QJ"
+			]
+		}
+	},
+	"version": 1
+}
