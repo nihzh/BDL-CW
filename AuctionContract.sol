@@ -101,6 +101,7 @@ contract VickreyAuctionHouse {
 
     // To keep external view functions simple:
     IERC721 public immutable classNFT = IERC721(0x1546Bd67237122754D3F0cB761c139f81388b210); // Sepolia NFT contract from spec
+    //IERC721 public immutable classNFT = IERC721(0xd9145CCE52D386f254917e481eB44e9943F39138);
 
     // --------- Events ---------
     event AuctionStarted(
@@ -187,15 +188,18 @@ contract VickreyAuctionHouse {
         if (msg.sender == A.seller) revert SellerCannotBid();
 
         // if first commit, take deposit = reserve price * 0.5
-        if (A.commitments[msg.sender] == bytes32(0)) {
-            if (msg.value != A.depositPrice) revert ExactDepositRequired();
-            A.depositAmount[msg.sender] += A.depositPrice;
-        }
-        else {
-            // refuse deposit in following commits
-            // require(msg.value == 0, "Deposit only required in first commit");
-            if(msg.value != 0) revert NoEthAllowed();
-        }
+        if (msg.value != A.depositPrice) revert ExactDepositRequired();
+        A.depositAmount[msg.sender] += A.depositPrice;
+
+        // if (A.commitments[msg.sender] == bytes32(0)) {
+        //     if (msg.value != A.depositPrice) revert ExactDepositRequired();
+        //     A.depositAmount[msg.sender] += A.depositPrice;
+        // }
+        // else {
+        //     // refuse deposit in following commits
+        //     // require(msg.value == 0, "Deposit only required in first commit");
+        //     if(msg.value != 0) revert NoEthAllowed();
+        // }
 
         // seq no. for tied price
         A.commitSeqCounter += 1;
@@ -315,7 +319,7 @@ contract VickreyAuctionHouse {
 
         // Transfer NFT to winner
         A.settled = true;
-        _safeTransferNFT(address(this), msg.sender, A.tokenId);
+        _safeTransferNFT(address(this), A.highestBidder, A.tokenId);
 
         emit WinnerPaidAndClaimed(auctionId, msg.sender, msg.value);
     }
@@ -339,7 +343,7 @@ contract VickreyAuctionHouse {
 
         // Transfer NFT to winner
         A.settled = true;
-        _safeTransferNFT(address(this), msg.sender, A.tokenId);
+        _safeTransferNFT(address(this), A.highestBidder, A.tokenId);
 
         emit WinnerPaidAndClaimed(auctionId, msg.sender, msg.value);
     }
@@ -405,12 +409,14 @@ contract VickreyAuctionHouse {
     // function _safeTransferNFT(IERC721 nft, address from, address to, uint256 tokenId) internal {
     function _safeTransferNFT(address from, address to, uint256 tokenId) internal {
         require(classNFT.ownerOf(tokenId) == from, "NFT: not owner");
-        // Accept either token-level or operator approval
-        require(
-            classNFT.getApproved(tokenId) == address(this) ||
-            classNFT.isApprovedForAll(from, address(this)),
-            "NFT: not approved"
-        );
+        if (to == address(this)) {
+            require(
+                classNFT.getApproved(tokenId) == address(this) ||
+                classNFT.isApprovedForAll(from, address(this)),
+                "NFT: not approved"
+            );
+        }
+
         classNFT.safeTransferFrom(from, to, tokenId);
     }
 
