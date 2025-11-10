@@ -779,11 +779,11 @@
 	},
 	"sources": {
 		"AuctionContract.sol": {
-			"keccak256": "0x5ec1fed16a287727c179430c419b372a44b26e1fda6a1ef9db026348ac9e9c20",
+			"keccak256": "0xdeec35ef1d029d196716b8a0e82a7743f51ad6ed343cb5a26f06c79e9427e411",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://8d126cb9ddcf26bd118b95faf6575d1db77aae4d85f7b078a7040f03d94bba9a",
-				"dweb:/ipfs/QmcRQGscfxpc4RyB5KegzZjXEGJFzVu94Tbpz6X1ixAQv3"
+				"bzz-raw://df37c6cfa6b7005786ab1646a07256409c4bbae5ef36899f55bd2d81b8f6e09d",
+				"dweb:/ipfs/QmSQ2C1oo6d4uKDzi94YKhUb5mdmwpNGr9gtJEfWSCXKdc"
 			]
 		}
 	},
