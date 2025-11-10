@@ -111,8 +111,8 @@ contract VickreyAuctionHouse {
     mapping(uint256 => Auction) private _auctions;
 
     // To keep external view functions simple:
-    IERC721 public immutable classNFT = IERC721(0x1546Bd67237122754D3F0cB761c139f81388b210); // Sepolia NFT contract from spec
-    // IERC721 public immutable classNFT = IERC721(0xd9145CCE52D386f254917e481eB44e9943F39138);
+    // IERC721 public immutable classNFT = IERC721(0x1546Bd67237122754D3F0cB761c139f81388b210); // Sepolia NFT contract from spec
+    IERC721 public immutable classNFT = IERC721(0xd2a5bC10698FD955D1Fe6cb468a17809A08fd005);
 
     // --------- Events ---------
     event AuctionStarted(
@@ -385,8 +385,8 @@ contract VickreyAuctionHouse {
         uint256 amount = A.bidders[msg.sender].depositAmount;
         if (amount == 0) revert NoDeposit();
 
-        // not reveal, 20% penalty on deposit
-        if (A.bidders[msg.sender].revealedAmount == 0) {
+        // not seller, not reveal, 20% penalty on deposit
+        if (msg.sender != A.seller && A.bidders[msg.sender].revealedAmount == 0) {
             amount -= amount / 5;
         }
 
@@ -405,8 +405,8 @@ contract VickreyAuctionHouse {
         uint256 amount = A.bidders[msg.sender].depositAmount;
         if (amount == 0) revert NoDeposit();
 
-        // not reveal, 20% penalty on deposit
-        if (A.bidders[msg.sender].revealedAmount == 0) {
+        // not seller, not reveal, 20% penalty on deposit
+        if (msg.sender != A.seller && A.bidders[msg.sender].revealedAmount == 0) {
             amount -= amount / 5;
         }
 
