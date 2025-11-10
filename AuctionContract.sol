@@ -111,8 +111,8 @@ contract VickreyAuctionHouse {
     mapping(uint256 => Auction) private _auctions;
 
     // To keep external view functions simple:
-    // IERC721 public immutable classNFT = IERC721(0x1546Bd67237122754D3F0cB761c139f81388b210); // Sepolia NFT contract from spec
-    IERC721 public immutable classNFT = IERC721(0xd2a5bC10698FD955D1Fe6cb468a17809A08fd005);
+    IERC721 public immutable classNFT = IERC721(0x1546Bd67237122754D3F0cB761c139f81388b210); // Sepolia NFT contract from spec
+    // IERC721 public immutable classNFT = IERC721(0xd2a5bC10698FD955D1Fe6cb468a17809A08fd005);
 
     // --------- Events ---------
     event AuctionStarted(
