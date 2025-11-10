@@ -121,7 +121,7 @@
 						"type": "address"
 					},
 					{
-						"indexed": true,
+						"indexed": false,
 						"internalType": "address",
 						"name": "nft",
 						"type": "address"
@@ -779,11 +779,11 @@
 	},
 	"sources": {
 		"AuctionContract.sol": {
-			"keccak256": "0x796bb807612331a2f83cd842db8ff7924f55a66338ffec21ebb9a63fd411f703",
+			"keccak256": "0x5ec1fed16a287727c179430c419b372a44b26e1fda6a1ef9db026348ac9e9c20",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://7647327f085d95869aee59d0b3e26daae9ea0c99496817eb311335df9cba71c3",
-				"dweb:/ipfs/QmbtecESFzRmZsVKH9UTDawmbsWeWxhYVYL55TZvp3VWfg"
+				"bzz-raw://8d126cb9ddcf26bd118b95faf6575d1db77aae4d85f7b078a7040f03d94bba9a",
+				"dweb:/ipfs/QmcRQGscfxpc4RyB5KegzZjXEGJFzVu94Tbpz6X1ixAQv3"
 			]
 		}
 	},
