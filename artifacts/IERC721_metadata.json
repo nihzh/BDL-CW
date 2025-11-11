@@ -92,16 +92,13 @@
 			}
 		],
 		"devdoc": {
-			"details": "Single active auction at a time; after an auction ends, anyone can start a new one.",
 			"kind": "dev",
 			"methods": {},
-			"title": "Simple Vickrey Auction House (Commit–Reveal for ERC-721 on Sepolia)",
 			"version": 1
 		},
 		"userdoc": {
 			"kind": "user",
 			"methods": {},
-			"notice": "Implements sealed-bid, second-price auctions with deterministic tie-break (earlier commit wins).",
 			"version": 1
 		}
 	},
@@ -122,11 +119,11 @@
 	},
 	"sources": {
 		"AuctionContract.sol": {
-			"keccak256": "0x4570b545c741aed209f14c95ea3a4ef2171b455f83b5524ee27d60dac1544a04",
+			"keccak256": "0xb6f4888811fc8ce4379e8242c3c20a0c1a977a9282bdba159f2c1f7953ba1d24",
 			"license": "MIT",
 			"urls": [
-				"bzz-raw://e9a69e133940eb71491577ee7b13bdadd823aefa365e28735099a1d501c2cfdb",
-				"dweb:/ipfs/QmXswUSAVBGBffyLNihf4Mrcnr4793GrVqxNDyET8Hs8GX"
+				"bzz-raw://e79ea09e89744f8ec6cd7019012e376ba8ae3ef9c20c7d4656d77f9fb41508bb",
+				"dweb:/ipfs/QmNaUXKKMXQzASSAppqhzAPHYVWhJELJTUxwRGkZJUXhbY"
 			]
 		}
 	},

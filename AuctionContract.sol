@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-/// @title Simple Vickrey Auction House (Commit–Reveal for ERC-721 on Sepolia)
-/// @notice Implements sealed-bid, second-price auctions with deterministic tie-break (earlier commit wins).
-/// @dev Single active auction at a time; after an auction ends, anyone can start a new one.
 interface IERC721 {
     function safeTransferFrom(address from, address to, uint256 tokenId) external;
     function ownerOf(uint256 tokenId) external view returns (address);
